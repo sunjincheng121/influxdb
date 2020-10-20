@@ -125,26 +125,28 @@ func getAuthorizedUser(r *http.Request, ts TenantService) (*influxdb.User, error
 }
 
 type postAuthorizationRequest struct {
-	Status      influxdb.Status       `json:"status"`
-	OrgID       influxdb.ID           `json:"orgID"`
-	UserID      *influxdb.ID          `json:"userID,omitempty"`
-	Description string                `json:"description"`
-	Permissions []influxdb.Permission `json:"permissions"`
+	Status      influxdb.Status            `json:"status"`
+	Type        influxdb.AuthorizationType `json:"authorizationType"`
+	OrgID       influxdb.ID                `json:"orgID"`
+	UserID      *influxdb.ID               `json:"userID,omitempty"`
+	Description string                     `json:"description"`
+	Permissions []influxdb.Permission      `json:"permissions"`
 }
 
 type authResponse struct {
-	ID          influxdb.ID          `json:"id"`
-	Token       string               `json:"token"`
-	Status      influxdb.Status      `json:"status"`
-	Description string               `json:"description"`
-	OrgID       influxdb.ID          `json:"orgID"`
-	Org         string               `json:"org"`
-	UserID      influxdb.ID          `json:"userID"`
-	User        string               `json:"user"`
-	Permissions []permissionResponse `json:"permissions"`
-	Links       map[string]string    `json:"links"`
-	CreatedAt   time.Time            `json:"createdAt"`
-	UpdatedAt   time.Time            `json:"updatedAt"`
+	ID          influxdb.ID                `json:"id"`
+	Token       string                     `json:"token"`
+	Status      influxdb.Status            `json:"status"`
+	Type        influxdb.AuthorizationType `json:"authorizationType"`
+	Description string                     `json:"description"`
+	OrgID       influxdb.ID                `json:"orgID"`
+	Org         string                     `json:"org"`
+	UserID      influxdb.ID                `json:"userID"`
+	User        string                     `json:"user"`
+	Permissions []permissionResponse       `json:"permissions"`
+	Links       map[string]string          `json:"links"`
+	CreatedAt   time.Time                  `json:"createdAt"`
+	UpdatedAt   time.Time                  `json:"updatedAt"`
 }
 
 // In the future, we would like only the service layer to look up the user and org to see if they are valid
@@ -165,6 +167,7 @@ func (h *AuthHandler) newAuthResponse(ctx context.Context, a *influxdb.Authoriza
 		ID:          a.ID,
 		Token:       a.Token,
 		Status:      a.Status,
+		Type:        a.Type,
 		Description: a.Description,
 		OrgID:       a.OrgID,
 		UserID:      a.UserID,
@@ -185,6 +188,7 @@ func (p *postAuthorizationRequest) toInfluxdb(userID influxdb.ID) *influxdb.Auth
 	return &influxdb.Authorization{
 		OrgID:       p.OrgID,
 		Status:      p.Status,
+		Type:        p.Type,
 		Description: p.Description,
 		Permissions: p.Permissions,
 		UserID:      userID,
@@ -246,6 +250,10 @@ func (p *postAuthorizationRequest) SetDefaults() {
 	if p.Status == "" {
 		p.Status = influxdb.Active
 	}
+
+	if p.Type == "" {
+		p.Type = influxdb.AuthorizationTypePlain
+	}
 }
 
 func (p *postAuthorizationRequest) Validate() error {
@@ -276,8 +284,15 @@ func (p *postAuthorizationRequest) Validate() error {
 		p.Status = influxdb.Active
 	}
 
-	err := p.Status.Valid()
-	if err != nil {
+	if err := p.Status.Valid(); err != nil {
+		return err
+	}
+
+	if p.Type == "" {
+		p.Type = influxdb.AuthorizationTypePlain
+	}
+
+	if err := p.Type.Valid(); err != nil {
 		return err
 	}
 
@@ -481,6 +496,15 @@ func decodeGetAuthorizationsRequest(ctx context.Context, r *http.Request) (*getA
 			return nil, err
 		}
 		req.filter.ID = id
+	}
+
+	authorizationType := qp.Get("authorizationType")
+	if authorizationType != "" {
+		var at influxdb.AuthorizationType
+		if err := at.UnmarshalText([]byte(authorizationType)); err != nil {
+			return nil, err
+		}
+		req.filter.Type = &at
 	}
 
 	return req, nil

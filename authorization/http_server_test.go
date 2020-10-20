@@ -146,6 +146,7 @@ func TestService_handlePostAuthorization(t *testing.T) {
     }
   ],
   "status": "active",
+  "authorizationType": "plain",
   "token": "new-test-token",
   "user": "u1",
   "userID": "aaaaaaaaaaaaaaaa"
@@ -324,6 +325,7 @@ func TestService_handleGetAuthorization(t *testing.T) {
     }
   ],
   "status": "",
+  "authorizationType": "plain",
   "token": "hello",
   "user": "u1",
   "userID": "020f755c3c082000"

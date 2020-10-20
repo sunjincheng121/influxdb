@@ -157,3 +157,5 @@ cypress/videos
 .yarnrc
 go/
 goreleaser-install
+
+*.env

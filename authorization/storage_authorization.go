@@ -407,6 +407,16 @@ func authorizationsPredicateFn(f influxdb.AuthorizationFilter) kv.CursorPredicat
 		}
 	}
 
+	if f.Type != nil {
+		exp := *f.Type
+		prevFn := pred
+		pred = func(key, value []byte) bool {
+			prev := prevFn == nil || prevFn(key, value)
+			got, _, _, err := jsonparser.Get(value, "authorizationType")
+			return prev && (exp == influxdb.AuthorizationType(got) || err != nil)
+		}
+	}
+
 	return pred
 }
 
@@ -439,6 +449,12 @@ func filterAuthorizationsFn(filter influxdb.AuthorizationFilter) func(a *influxd
 	if filter.UserID != nil {
 		return func(a *influxdb.Authorization) bool {
 			return a.UserID == *filter.UserID
+		}
+	}
+
+	if filter.Type != nil {
+		return func(a *influxdb.Authorization) bool {
+			return a.Type == *filter.Type
 		}
 	}
 

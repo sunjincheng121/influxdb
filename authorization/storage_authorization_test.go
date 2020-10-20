@@ -58,6 +58,7 @@ func TestAuth(t *testing.T) {
 						OrgID:  influxdb.ID(i),
 						UserID: influxdb.ID(i),
 						Status: "active",
+						Type:   influxdb.AuthorizationTypePlain,
 					})
 				}
 				if !reflect.DeepEqual(auths, expected) {
@@ -87,6 +88,7 @@ func TestAuth(t *testing.T) {
 						OrgID:  influxdb.ID(i),
 						UserID: influxdb.ID(i),
 						Status: influxdb.Active,
+						Type:   influxdb.AuthorizationTypePlain,
 					}
 
 					authByID, err := store.GetAuthorizationByID(context.Background(), tx, influxdb.ID(i))
@@ -142,6 +144,7 @@ func TestAuth(t *testing.T) {
 						OrgID:  influxdb.ID(i),
 						UserID: influxdb.ID(i),
 						Status: influxdb.Inactive,
+						Type:   influxdb.AuthorizationTypePlain,
 					}
 
 					if !reflect.DeepEqual(auth, expectedAuth) {
